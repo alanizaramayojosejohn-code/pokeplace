@@ -1,0 +1,63 @@
+package com.example.demo.service;
+
+import com.example.demo.dto.AuthResponse;
+import com.example.demo.dto.LoginRequest;
+import com.example.demo.model.User;
+import com.example.demo.repository.UserRepository;
+import com.example.demo.security.GoogleTokenVerifier;
+import com.example.demo.security.JwtUtil;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+public class AuthService {
+
+    private final UserRepository userRepository;
+    private final JwtUtil jwtUtil;
+    private final PasswordEncoder passwordEncoder;
+
+    public AuthResponse login(LoginRequest request) {
+
+        // Busca el usuario por email
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
+
+        // Verifica que la contraseña sea correcta
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new RuntimeException("Invalid credentials");
+        }
+
+        // Genera el JWT con email y rol
+        String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+
+        return new AuthResponse(token, user.getName(), user.getEmail(), user.getRole().name());
+    }
+
+    private final GoogleTokenVerifier googleTokenVerifier;
+
+public AuthResponse googleLogin(String token) {
+
+    // Verifica el token con Google y obtiene los datos del usuario
+    var payload = googleTokenVerifier.verify(token);
+
+    String email = payload.getEmail();
+    String googleId = payload.getSubject();
+    String name = (String) payload.get("name");
+
+    // Busca si el usuario ya existe en la BD
+    User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("User not registered. Contact your administrator."));
+
+    // Actualiza el googleId si aún no lo tiene
+    if (user.getGoogleId() == null) {
+        user.setGoogleId(googleId);
+        userRepository.save(user);
+    }
+
+    String jwt = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+
+    return new AuthResponse(jwt, user.getName(), user.getEmail(), user.getRole().name());
+}
+}
