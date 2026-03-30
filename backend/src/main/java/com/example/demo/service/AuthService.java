@@ -17,47 +17,35 @@ public class AuthService {
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
+    private final GoogleTokenVerifier googleTokenVerifier;
 
     public AuthResponse login(LoginRequest request) {
-
-        // Busca el usuario por email
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Invalid credentials"));
 
-        // Verifica que la contraseña sea correcta
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new RuntimeException("Invalid credentials");
         }
 
-        // Genera el JWT con email y rol
         String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
-
         return new AuthResponse(token, user.getName(), user.getEmail(), user.getRole().name());
     }
 
-    private final GoogleTokenVerifier googleTokenVerifier;
+    public AuthResponse googleLogin(String googleToken) {
+        var payload = googleTokenVerifier.verify(googleToken);
 
-public AuthResponse googleLogin(String token) {
+        String email = payload.getEmail();
+        String googleId = payload.getSubject();
 
-    // Verifica el token con Google y obtiene los datos del usuario
-    var payload = googleTokenVerifier.verify(token);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not registered. Contact your administrator."));
 
-    String email = payload.getEmail();
-    String googleId = payload.getSubject();
-    String name = (String) payload.get("name");
+        if (user.getGoogleId() == null) {
+            user.setGoogleId(googleId);
+            userRepository.save(user);
+        }
 
-    // Busca si el usuario ya existe en la BD
-    User user = userRepository.findByEmail(email)
-            .orElseThrow(() -> new RuntimeException("User not registered. Contact your administrator."));
-
-    // Actualiza el googleId si aún no lo tiene
-    if (user.getGoogleId() == null) {
-        user.setGoogleId(googleId);
-        userRepository.save(user);
+        String jwt = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+        return new AuthResponse(jwt, user.getName(), user.getEmail(), user.getRole().name());
     }
-
-    String jwt = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
-
-    return new AuthResponse(jwt, user.getName(), user.getEmail(), user.getRole().name());
-}
 }
