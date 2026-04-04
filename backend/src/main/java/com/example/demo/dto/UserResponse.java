@@ -7,6 +7,9 @@ import lombok.Data;
 public class UserResponse {
     private Long id;
     private String name;
+    private String lastname;
+    private String phone;
+    private Integer ci;
     private String email;
     private String role;
 
@@ -15,6 +18,9 @@ public class UserResponse {
         UserResponse response = new UserResponse();
         response.setId(user.getId());
         response.setName(user.getName());
+        response.setLastname(user.getLastname());
+        response.setPhone(user.getPhone());
+        response.setCi(user.getCi());
         response.setEmail(user.getEmail());
         response.setRole(user.getRole().name());
         return response;

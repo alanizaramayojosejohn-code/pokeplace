@@ -26,6 +26,11 @@ public ResponseEntity<List<UserResponse>> getAll() {
     );
 }
 
+@PutMapping("/{id}")
+public ResponseEntity<UserResponse> update(@PathVariable Long id, @RequestBody User user) {
+    return ResponseEntity.ok(UserResponse.from(userService.updateUser(id, user)));
+}
+
 @PostMapping
 public ResponseEntity<UserResponse> create(@RequestBody User user) {
     return ResponseEntity.ok(UserResponse.from(userService.createUser(user)));
