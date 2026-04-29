@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.model.Audit;
 import com.example.demo.model.User;
 import com.example.demo.repository.AuditRepository;
@@ -29,10 +30,9 @@ public class AuditService {
         return auditRepository.findByUserId(userId);
     }
 
-    // Método reutilizable para registrar acciones desde otros servicios
     public void log(String action, String tableName, Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
         Audit audit = Audit.builder()
                 .action(action)

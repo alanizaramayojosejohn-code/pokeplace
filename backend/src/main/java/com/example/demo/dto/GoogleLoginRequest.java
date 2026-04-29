@@ -1,8 +1,11 @@
 package com.example.demo.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
 public class GoogleLoginRequest {
-    private String token; // token que devuelve Google
+
+    @NotBlank(message = "Google token is required")
+    private String token;
 }

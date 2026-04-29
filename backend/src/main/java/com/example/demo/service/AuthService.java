@@ -2,6 +2,7 @@ package com.example.demo.service;
 
 import com.example.demo.dto.AuthResponse;
 import com.example.demo.dto.LoginRequest;
+import com.example.demo.exception.InvalidCredentialsException;
 import com.example.demo.model.User;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.security.GoogleTokenVerifier;
@@ -21,14 +22,14 @@ public class AuthService {
 
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
+            throw new InvalidCredentialsException("Invalid credentials");
         }
 
         String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
-        return new AuthResponse(token, user.getName(), user.getEmail(), user.getRole().name());
+        return new AuthResponse(token, user.getId(), user.getName(), user.getEmail(), user.getRole().name());
     }
 
     public AuthResponse googleLogin(String googleToken) {
@@ -38,7 +39,7 @@ public class AuthService {
         String googleId = payload.getSubject();
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not registered. Contact your administrator."));
+                .orElseThrow(() -> new InvalidCredentialsException("User not registered. Contact your administrator."));
 
         if (user.getGoogleId() == null) {
             user.setGoogleId(googleId);
@@ -46,6 +47,6 @@ public class AuthService {
         }
 
         String jwt = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
-        return new AuthResponse(jwt, user.getName(), user.getEmail(), user.getRole().name());
+        return new AuthResponse(jwt, user.getId(), user.getName(), user.getEmail(), user.getRole().name());
     }
 }

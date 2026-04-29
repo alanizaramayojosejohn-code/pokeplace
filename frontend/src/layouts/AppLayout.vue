@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useRouter, RouterLink } from 'vue-router'
 
@@ -9,6 +10,18 @@ function handleLogout() {
   authStore.logout()
   router.push('/login')
 }
+
+const isAdmin = computed(() => authStore.userRole === 'ADMIN')
+const isCashier = computed(() => authStore.userRole === 'CASHIER')
+
+const navItems = computed(() => [
+  { to: '/dashboard', icon: '⊞', label: 'Inicio', show: true },
+  { to: '/orders', icon: '🧾', label: 'Órdenes', show: isAdmin.value || isCashier.value },
+  { to: '/clients', icon: '👥', label: 'Clientes', show: isAdmin.value || isCashier.value },
+  { to: '/products', icon: '📦', label: 'Productos', show: isAdmin.value },
+  { to: '/categories', icon: '🗂', label: 'Categorías', show: isAdmin.value },
+  { to: '/users', icon: '✦', label: 'Usuarios', show: isAdmin.value },
+])
 </script>
 
 <template>
@@ -20,15 +33,11 @@ function handleLogout() {
       </div>
 
       <nav class="nav">
-        <RouterLink class="nav-item" to="/dashboard">
-          <span class="nav-icon">⊞</span> Inicio
-        </RouterLink>
-        <RouterLink class="nav-item" to="/orders">
-          <span class="nav-icon">◈</span> Ordenes
-        </RouterLink>
-        <RouterLink v-if="authStore.userRole === 'ADMIN'" class="nav-item" to="/users">
-          <span class="nav-icon">✦</span> Usuarios
-        </RouterLink>
+        <template v-for="item in navItems" :key="item.to">
+          <RouterLink v-if="item.show" class="nav-item" :to="item.to">
+            <span class="nav-icon">{{ item.icon }}</span> {{ item.label }}
+          </RouterLink>
+        </template>
       </nav>
 
       <div class="sidebar-footer">
@@ -39,41 +48,31 @@ function handleLogout() {
             <span class="user-role">{{ authStore.user?.role }}</span>
           </div>
         </div>
-        <button class="logout-btn" @click="handleLogout">→</button>
+        <button class="logout-btn" title="Cerrar sesión" @click="handleLogout">→</button>
       </div>
     </aside>
 
     <main class="content">
-      <!-- Aquí se renderizan todas las vistas -->
       <RouterView />
     </main>
   </div>
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500&display=swap');
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
 .layout {
   display: flex;
   min-height: 100vh;
-  width: 100vw;
-  font-family: 'DM Sans', sans-serif;
-  background: #f5f5f5;
+  width: 100%;
+  background: var(--color-bg);
 }
 
 .sidebar {
-  width: 240px;
-  min-width: 240px;
-  background: #111;
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  background: var(--color-dark);
   display: flex;
   flex-direction: column;
-  padding: 1.5rem;
+  padding: 1.5rem 1rem;
   position: fixed;
   top: 0;
   left: 0;
@@ -85,39 +84,40 @@ function handleLogout() {
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 2.5rem;
+  padding: 0 0.5rem;
 }
 
 .logo-mark {
   width: 36px;
   height: 36px;
-  background: #e02020;
+  background: var(--color-primary);
   color: white;
-  font-family: 'Playfair Display', serif;
-  font-size: 1.2rem;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
   font-weight: 900;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   flex-shrink: 0;
 }
 
 .brand {
-  font-family: 'Playfair Display', serif;
-  font-size: 1.2rem;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
   font-weight: 700;
   color: white;
 }
 
 .brand span {
-  color: #e02020;
+  color: var(--color-primary);
 }
 
 .nav {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.15rem;
 }
 
 .nav-item {
@@ -125,31 +125,34 @@ function handleLogout() {
   align-items: center;
   gap: 0.75rem;
   padding: 0.7rem 0.9rem;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   color: #888;
   text-decoration: none;
-  font-size: 0.9rem;
-  transition: all 0.15s;
+  font-size: var(--text-base);
+  transition: all var(--transition-fast);
 }
 
 .nav-item:hover {
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.06);
   color: white;
 }
 .nav-item.router-link-active {
-  background: #e02020;
+  background: var(--color-primary);
   color: white;
 }
 .nav-icon {
-  font-size: 1rem;
+  font-size: var(--text-md);
+  width: 20px;
+  text-align: center;
 }
 
 .sidebar-footer {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding-top: 1rem;
+  padding: 1rem 0.5rem 0;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: 0.5rem;
 }
 
 .user-card {
@@ -163,14 +166,14 @@ function handleLogout() {
 .avatar {
   width: 34px;
   height: 34px;
-  background: #e02020;
+  background: var(--color-primary);
   color: white;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
   flex-shrink: 0;
 }
 
@@ -182,7 +185,7 @@ function handleLogout() {
 
 .user-name {
   color: white;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -191,7 +194,7 @@ function handleLogout() {
 
 .user-role {
   color: #666;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
 }
 
 .logout-btn {
@@ -200,26 +203,25 @@ function handleLogout() {
   color: #888;
   width: 32px;
   height: 32px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: all 0.15s;
+  transition: all var(--transition-fast);
 }
 
 .logout-btn:hover {
-  border-color: #e02020;
-  color: #e02020;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 .content {
-  margin-left: 240px;
+  margin-left: var(--sidebar-width);
   flex: 1;
   min-height: 100vh;
-  width: calc(100vw - 240px);
+  width: calc(100% - var(--sidebar-width));
 }
 
 @media (max-width: 768px) {
@@ -230,7 +232,7 @@ function handleLogout() {
   }
   .content {
     margin-left: 0;
-    width: 100vw;
+    width: 100%;
   }
   .layout {
     flex-direction: column;

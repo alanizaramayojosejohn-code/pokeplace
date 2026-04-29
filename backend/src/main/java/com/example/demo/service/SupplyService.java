@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.model.Product;
 import com.example.demo.model.Supply;
 import com.example.demo.model.User;
@@ -30,14 +31,12 @@ public class SupplyService {
 
     @Transactional
     public Supply create(Supply supply) {
-        // Verifica que el producto existe
         Product product = productRepository.findById(supply.getProduct().getId())
-                .orElseThrow(() -> new RuntimeException("Product not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
         supply.setProduct(product);
 
-        // Verifica que el usuario existe
         User user = userRepository.findById(supply.getUser().getId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         supply.setUser(user);
 
         return supplyRepository.save(supply);
@@ -45,7 +44,7 @@ public class SupplyService {
 
     public void delete(Long id) {
         if (!supplyRepository.existsById(id)) {
-            throw new RuntimeException("Supply not found with id: " + id);
+            throw new ResourceNotFoundException("Supply not found with id: " + id);
         }
         supplyRepository.deleteById(id);
     }

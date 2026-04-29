@@ -34,6 +34,9 @@ public class User extends BaseEntity {
 
     private String googleId;
 
+    // Sueldo quincenal del empleado
+    private Double salary;
+
     @Enumerated(EnumType.STRING)
     private Role role;
 

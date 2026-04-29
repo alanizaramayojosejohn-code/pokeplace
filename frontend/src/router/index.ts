@@ -17,7 +17,6 @@ const router = createRouter({
       meta: { guestOnly: true },
     },
     {
-      // Todas las rutas autenticadas van dentro de AppLayout
       path: '/',
       component: AppLayout,
       meta: { requiresAuth: true },
@@ -32,6 +31,28 @@ const router = createRouter({
           name: 'users',
           component: () => import('../views/UserView.vue'),
           meta: { requiresAdmin: true },
+        },
+        {
+          path: 'categories',
+          name: 'categories',
+          component: () => import('../views/CategoryView.vue'),
+          meta: { requiresAdmin: true },
+        },
+        {
+          path: 'products',
+          name: 'products',
+          component: () => import('../views/ProductView.vue'),
+          meta: { requiresAdmin: true },
+        },
+        {
+          path: 'clients',
+          name: 'clients',
+          component: () => import('../views/ClientView.vue'),
+        },
+        {
+          path: 'orders',
+          name: 'orders',
+          component: () => import('../views/OrderView.vue'),
         },
       ],
     },

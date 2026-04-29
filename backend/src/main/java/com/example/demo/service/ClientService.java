@@ -1,5 +1,7 @@
 package com.example.demo.service;
 
+import com.example.demo.exception.DuplicateResourceException;
+import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.model.Client;
 import com.example.demo.repository.ClientRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,17 +21,17 @@ public class ClientService {
 
     public Client getById(Long id) {
         return clientRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Client not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Client not found with id: " + id));
     }
 
     public Client getByCi(Integer ci) {
         return clientRepository.findByCi(ci)
-                .orElseThrow(() -> new RuntimeException("Client not found with ci: " + ci));
+                .orElseThrow(() -> new ResourceNotFoundException("Client not found with ci: " + ci));
     }
 
     public Client create(Client client) {
         if (clientRepository.existsByCi(client.getCi())) {
-            throw new RuntimeException("Client already exists with ci: " + client.getCi());
+            throw new DuplicateResourceException("Client already exists with ci: " + client.getCi());
         }
         return clientRepository.save(client);
     }
@@ -43,7 +45,7 @@ public class ClientService {
 
     public void delete(Long id) {
         if (!clientRepository.existsById(id)) {
-            throw new RuntimeException("Client not found with id: " + id);
+            throw new ResourceNotFoundException("Client not found with id: " + id);
         }
         clientRepository.deleteById(id);
     }

@@ -51,6 +51,6 @@ public class Order extends BaseEntity {
     private List<OrderDetail> details;
 
     public enum OrderStatus {
-        PENDING, DELIVERED, CANCELLED
+        PENDING, READY_FOR_PICKUP, DELIVERED, CANCELLED
     }
 }

@@ -99,8 +99,6 @@ async function handleLogin() {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500&display=swap');
-
 * {
   box-sizing: border-box;
   margin: 0;
@@ -111,7 +109,7 @@ async function handleLogin() {
   display: flex;
   min-height: 100vh;
   min-width: 100vw;
-  font-family: 'DM Sans', sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .brand-panel {
@@ -137,7 +135,7 @@ async function handleLogin() {
   height: 72px;
   background: #e02020;
   color: white;
-  font-family: 'Playfair Display', serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 2.5rem;
   font-weight: 900;
   display: flex;
@@ -148,7 +146,7 @@ async function handleLogin() {
 }
 
 .brand-name {
-  font-family: 'Playfair Display', serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 3rem;
   font-weight: 900;
   letter-spacing: -1px;
@@ -198,7 +196,7 @@ async function handleLogin() {
 }
 
 .form-header h2 {
-  font-family: 'Playfair Display', serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 2rem;
   font-weight: 700;
   color: #111;
@@ -230,7 +228,7 @@ input {
   border: 1.5px solid #e0e0e0;
   border-radius: 4px;
   font-size: 0.95rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: #111;
   transition: border-color 0.2s;
   outline: none;
@@ -249,7 +247,7 @@ button {
   border-radius: 4px;
   font-size: 1rem;
   font-weight: 500;
-  font-family: 'DM Sans', sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   cursor: pointer;
   margin-top: 0.5rem;
   transition:
@@ -340,7 +338,7 @@ button:disabled {
   border: 1.5px solid #e0e0e0;
   border-radius: 4px;
   font-size: 0.95rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   cursor: pointer;
   display: flex;
   align-items: center;

@@ -1,5 +1,7 @@
 package com.example.demo.service;
 
+import com.example.demo.exception.BadRequestException;
+import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.model.*;
 import com.example.demo.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +26,7 @@ public class OrderService {
 
     public Order getById(Long id) {
         return orderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Order not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
     }
 
     public List<Order> getByStatus(Order.OrderStatus status) {
@@ -33,27 +35,37 @@ public class OrderService {
 
     @Transactional
     public Order create(Order order) {
-        // Asigna la fecha y hora actual
         order.setDateTime(LocalDateTime.now());
         order.setStatus(Order.OrderStatus.PENDING);
 
-        // Verifica que el usuario existe
         User user = userRepository.findById(order.getUser().getId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         order.setUser(user);
 
-        // Cliente es opcional
         if (order.getClient() != null && order.getClient().getId() != null) {
             Client client = clientRepository.findById(order.getClient().getId())
-                    .orElseThrow(() -> new RuntimeException("Client not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Client not found"));
             order.setClient(client);
+        } else {
+            order.setClient(null);
         }
 
-        // Calcula el total y verifica los productos
         double total = 0;
         for (OrderDetail detail : order.getDetails()) {
             Product product = productRepository.findById(detail.getProduct().getId())
-                    .orElseThrow(() -> new RuntimeException("Product not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Product not found with id: " + detail.getProduct().getId()));
+
+            // Los Inedible (llaveros, peluches) descuentan stock.
+            // Los Edible (poke bowls) no tienen stock — se controlan por Supply.
+            if (product instanceof Inedible inedible) {
+                if (inedible.getStock() < detail.getQuantity()) {
+                    throw new BadRequestException("Insufficient stock for product: " + product.getName()
+                            + " (available: " + inedible.getStock() + ", requested: " + detail.getQuantity() + ")");
+                }
+                inedible.setStock(inedible.getStock() - detail.getQuantity());
+            }
+
             detail.setProduct(product);
             detail.setSubtotal(product.getPrice() * detail.getQuantity());
             detail.setOrder(order);
@@ -73,7 +85,7 @@ public class OrderService {
 
     public void delete(Long id) {
         if (!orderRepository.existsById(id)) {
-            throw new RuntimeException("Order not found with id: " + id);
+            throw new ResourceNotFoundException("Order not found with id: " + id);
         }
         orderRepository.deleteById(id);
     }

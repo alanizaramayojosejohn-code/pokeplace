@@ -12,8 +12,8 @@ public class UserResponse {
     private Integer ci;
     private String email;
     private String role;
+    private Double salary;
 
-    // Convierte un User a UserResponse (sin password)
     public static UserResponse from(User user) {
         UserResponse response = new UserResponse();
         response.setId(user.getId());
@@ -22,7 +22,8 @@ public class UserResponse {
         response.setPhone(user.getPhone());
         response.setCi(user.getCi());
         response.setEmail(user.getEmail());
-        response.setRole(user.getRole().name());
+        response.setRole(user.getRole() != null ? user.getRole().name() : null);
+        response.setSalary(user.getSalary());
         return response;
     }
 }

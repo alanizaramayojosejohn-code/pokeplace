@@ -1,5 +1,7 @@
 package com.example.demo.service;
 
+import com.example.demo.exception.DuplicateResourceException;
+import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.model.Category;
 import com.example.demo.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,12 +21,12 @@ public class CategoryService {
 
     public Category getById(Long id) {
         return categoryRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Category not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + id));
     }
 
     public Category create(Category category) {
         if (categoryRepository.existsByName(category.getName())) {
-            throw new RuntimeException("Category already exists: " + category.getName());
+            throw new DuplicateResourceException("Category already exists: " + category.getName());
         }
         return categoryRepository.save(category);
     }
@@ -37,7 +39,7 @@ public class CategoryService {
 
     public void delete(Long id) {
         if (!categoryRepository.existsById(id)) {
-            throw new RuntimeException("Category not found with id: " + id);
+            throw new ResourceNotFoundException("Category not found with id: " + id);
         }
         categoryRepository.deleteById(id);
     }
