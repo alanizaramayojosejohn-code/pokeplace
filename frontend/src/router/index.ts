@@ -54,6 +54,18 @@ const router = createRouter({
           name: 'orders',
           component: () => import('../views/OrderView.vue'),
         },
+        {
+          path: 'reports',
+          name: 'reports',
+          component: () => import('../views/SalesReportView.vue'),
+          meta: { requiresAdmin: true },
+        },
+        {
+        path: 'audit',
+        name: 'audit',
+        component: () => import('../views/AuditView.vue'),
+        meta: { requiresAdmin: true },
+        },
       ],
     },
   ],

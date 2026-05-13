@@ -9,8 +9,11 @@ import com.example.demo.model.Inedible;
 import com.example.demo.model.Product;
 import com.example.demo.repository.CategoryRepository;
 import com.example.demo.repository.ProductRepository;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -34,6 +37,7 @@ public class ProductService {
         return productRepository.findByCategoryId(categoryId);
     }
 
+    @Transactional
     public Product create(Product product) {
         if (productRepository.existsByName(product.getName())) {
             throw new DuplicateResourceException("Product already exists: " + product.getName());
@@ -44,6 +48,7 @@ public class ProductService {
         return productRepository.save(product);
     }
 
+    @Transactional
     public Edible updateEdible(Long id, Edible updated) {
         Product existing = getById(id);
         if (!(existing instanceof Edible edible)) {
@@ -60,6 +65,7 @@ public class ProductService {
         return productRepository.save(edible);
     }
 
+    @Transactional
     public Inedible updateInedible(Long id, Inedible updated) {
         Product existing = getById(id);
         if (!(existing instanceof Inedible inedible)) {
@@ -77,6 +83,7 @@ public class ProductService {
         return productRepository.save(inedible);
     }
 
+    @Transactional
     public void delete(Long id) {
         if (!productRepository.existsById(id)) {
             throw new ResourceNotFoundException("Product not found with id: " + id);

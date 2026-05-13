@@ -21,6 +21,8 @@ const navItems = computed(() => [
   { to: '/products', icon: '📦', label: 'Productos', show: isAdmin.value },
   { to: '/categories', icon: '🗂', label: 'Categorías', show: isAdmin.value },
   { to: '/users', icon: '✦', label: 'Usuarios', show: isAdmin.value },
+  { to: '/reports',   icon: '📊', label: 'Reports',     show: isAdmin.value },
+  { to: '/audit',      icon: '🔍', label: 'Auditoría',   show: isAdmin.value },  // ← nueva línea
 ])
 </script>
 
