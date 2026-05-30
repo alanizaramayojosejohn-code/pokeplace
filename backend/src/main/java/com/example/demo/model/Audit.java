@@ -41,4 +41,8 @@ public class Audit {
     public enum AuditAction {
         CREATE, UPDATE, DELETE
     }
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 }

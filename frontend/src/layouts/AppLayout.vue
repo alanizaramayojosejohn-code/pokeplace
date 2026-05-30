@@ -13,6 +13,7 @@ function handleLogout() {
 
 const isAdmin = computed(() => authStore.userRole === 'ADMIN')
 const isCashier = computed(() => authStore.userRole === 'CASHIER')
+const isKitchen = computed(() => authStore.userRole === 'KITCHEN')
 
 const navItems = computed(() => [
   { to: '/dashboard', icon: '⊞', label: 'Inicio', show: true },
@@ -21,8 +22,9 @@ const navItems = computed(() => [
   { to: '/products', icon: '📦', label: 'Productos', show: isAdmin.value },
   { to: '/categories', icon: '🗂', label: 'Categorías', show: isAdmin.value },
   { to: '/users', icon: '✦', label: 'Usuarios', show: isAdmin.value },
-  { to: '/reports',   icon: '📊', label: 'Reports',     show: isAdmin.value },
-  { to: '/audit',      icon: '🔍', label: 'Auditoría',   show: isAdmin.value },  // ← nueva línea
+  { to: '/reports',   icon: '📊', label: 'Reportes',     show: isAdmin.value },
+  { to: '/audit',      icon: '🔍', label: 'Auditoría',   show: isAdmin.value },
+  { to: '/stock-notes', icon: '📋', label: 'Reposicion de Suministros', show: isAdmin.value || isKitchen.value }, 
 ])
 </script>
 

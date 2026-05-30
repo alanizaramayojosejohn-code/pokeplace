@@ -6,6 +6,7 @@ import com.example.demo.exception.DuplicateResourceException;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.model.Audit;
 import com.example.demo.model.User;
+import com.example.demo.repository.AuditRepository;
 import com.example.demo.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -14,8 +15,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -24,7 +25,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final AuditService auditService;       // ← nuevo
     private final SecurityUtils securityUtils;     // ← nuevo
-
+    private final AuditRepository auditRepository;
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
@@ -47,7 +48,7 @@ public class UserService {
             Audit.AuditAction.CREATE,
             null,
             sanitized(saved),
-            securityUtils.getCurrentUsername()
+            securityUtils.getCurrentUsername(), null
         );
 
         return saved;
@@ -80,12 +81,27 @@ public class UserService {
             Audit.AuditAction.UPDATE,
             previousSnapshot,
             sanitized(saved),
-            securityUtils.getCurrentUsername()
+            securityUtils.getCurrentUsername(), null
         );
 
         return saved;
     }
+    // Por usuario
+    public List<Audit> getUserAudit(Long id) {
+        return auditRepository.findByEntityTypeAndEntityIdOrderByPerformedAtDesc("USER", id);
+    }
 
+    // Por usuario + rango de fechas
+    public List<Audit> getUserAuditByDateRange(Long id, LocalDateTime from, LocalDateTime to) {
+        return auditRepository.findByEntityTypeAndEntityIdAndPerformedAtBetweenOrderByPerformedAtDesc(
+            "USER", id, from, to
+        );
+    }
+
+    // Todo el audit por rango de fechas
+    public List<Audit> getAllAuditByDateRange(LocalDateTime from, LocalDateTime to) {
+        return auditRepository.findByPerformedAtBetweenOrderByPerformedAtDesc(from, to);
+    }
     @Transactional
     public void deleteUser(Long id) {
         User existing = userRepository.findById(id)
@@ -100,7 +116,7 @@ public class UserService {
             Audit.AuditAction.DELETE,
             sanitized(existing),
             null,
-            securityUtils.getCurrentUsername()
+            securityUtils.getCurrentUsername(), null
         );
     }
 

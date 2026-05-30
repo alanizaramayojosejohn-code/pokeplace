@@ -2,6 +2,7 @@ package com.example.demo.service;
 
 import com.example.demo.exception.BadRequestException;
 import com.example.demo.exception.ResourceNotFoundException;
+// ← nuevo
 import com.example.demo.model.*;
 import com.example.demo.repository.*;
 import com.example.demo.config.SecurityUtils;
@@ -11,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+
 @Service
 @RequiredArgsConstructor
 public class OrderService {
@@ -19,9 +21,9 @@ public class OrderService {
     private final UserRepository userRepository;
     private final ClientRepository clientRepository;
     private final ProductRepository productRepository;
-    private final AuditService auditService;       // ← nuevo
-    private final SecurityUtils securityUtils;     // ← nuevo
-
+    private final AuditService auditService;       
+    private final SecurityUtils securityUtils;     
+    private final AuditRepository auditRepository; 
     public List<Order> getAll() {
         return orderRepository.findAll();
     }
@@ -82,7 +84,7 @@ public class OrderService {
             Audit.AuditAction.CREATE,
             null,
             saved.getId(),
-            securityUtils.getCurrentUsername()
+            securityUtils.getCurrentUsername(), null
         );
 
         return saved;
@@ -103,7 +105,7 @@ public class OrderService {
             Audit.AuditAction.UPDATE,
             previousStatus,
             status,
-            securityUtils.getCurrentUsername()
+            securityUtils.getCurrentUsername(), null
         );
 
         return saved;
@@ -114,7 +116,6 @@ public class OrderService {
         Order order = getById(id); // ← obtener la orden antes de borrarla
         
         orderRepository.deleteById(id);
-
         // ← auditoría con el ID de la orden borrada
         auditService.log(
             "ORDER",
@@ -122,7 +123,18 @@ public class OrderService {
             Audit.AuditAction.DELETE,
             order.getId(), // ← usar el ID de la orden obtenida
             null,
-            securityUtils.getCurrentUsername()
+            securityUtils.getCurrentUsername(), null
         );
     }
+    
+
+// Audit de una orden
+public List<Audit> getOrderAudit(Long id) {
+    return auditRepository.findByEntityTypeAndEntityIdOrderByPerformedAtDesc("ORDER", id);
+}
+
+// Audit de órdenes por usuario y día
+public List<Audit> getOrderAuditByUserAndDay(String username, LocalDateTime date) {
+    return auditRepository.findOrderAuditByUserAndDay(username, date);
+}
 }

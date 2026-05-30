@@ -53,8 +53,10 @@ function renderPaymentChart(): void {
       labels: summary.value.salesByPaymentMethod.map(m => m.paymentMethod),
       datasets: [{
         data: summary.value.salesByPaymentMethod.map(m => m.total),
-        backgroundColor: ['#1a1a1a', '#555', '#999', '#ccc'],
-        borderWidth: 0,
+        backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#14b8a6'],
+        borderColor: '#ffffff',
+        borderWidth: 2,
+        hoverOffset: 10,
       }]
     },
     options: {
@@ -94,23 +96,23 @@ function renderPaymentChart(): void {
       <!-- Summary Cards -->
       <div class="stats-grid">
         <div class="stat-card">
-          <span class="stat-label">Period Total</span>
-          <span class="stat-value">${{ summary.periodTotal.toFixed(2) }}</span>
+          <span class="stat-label">Total</span>
+          <span class="stat-value">Bs {{ summary.periodTotal.toFixed(2) }}</span>
         </div>
         <div class="stat-card">
-          <span class="stat-label">Delivered Orders</span>
+          <span class="stat-label">Ordenes Entregadas</span>
           <span class="stat-value">{{ summary.totalOrders }}</span>
         </div>
         <div class="stat-card">
-          <span class="stat-label">Avg. per Order</span>
+          <span class="stat-label">Promedio por orden</span>
           <span class="stat-value">
-            ${{ summary.totalOrders > 0
+            Bs {{ summary.totalOrders > 0
               ? (summary.periodTotal / summary.totalOrders).toFixed(2)
               : '0.00' }}
           </span>
         </div>
         <div class="stat-card">
-          <span class="stat-label">Products Sold</span>
+          <span class="stat-label">Productos vendidos</span>
           <span class="stat-value">
             {{ summary.bestSellingProducts.reduce((s, p) => s + p.quantitySold, 0) }}
           </span>
@@ -120,7 +122,7 @@ function renderPaymentChart(): void {
       <!-- Charts Row -->
 <div class="charts-grid" ref="chartsSection">
   <div class="card">
-    <h3 class="card-title">Products Sold in Period</h3>
+    <h3 class="card-title">Productos vendidos por Rango de Fechas</h3>
     <table class="table">
       <thead>
         <tr>
@@ -138,7 +140,7 @@ function renderPaymentChart(): void {
           <td class="rank">{{ i + 1 }}</td>
           <td class="product-name">{{ p.productName }}</td>
           <td>{{ p.quantitySold }}</td>
-          <td class="revenue">${{ p.revenue.toFixed(2) }}</td>
+          <td class="revenue">Bs {{ p.revenue.toFixed(2) }}</td>
         </tr>
         <tr v-if="summary.bestSellingProducts.length === 0">
           <td colspan="4" class="empty-row">No products found in this period.</td>
@@ -148,14 +150,14 @@ function renderPaymentChart(): void {
   </div>
 
   <div class="card">
-    <h3 class="card-title">Sales by Payment Method</h3>
+    <h3 class="card-title">Ventas por metodo de Pago</h3>
     <canvas ref="paymentChart"></canvas>
   </div>
 </div>
 
       <!-- Best Selling Products -->
       <div class="card">
-        <h3 class="card-title">Best Selling Products</h3>
+        <h3 class="card-title">Productos mas vendidos</h3>
         <table class="table">
           <thead>
             <tr>
@@ -170,7 +172,7 @@ function renderPaymentChart(): void {
               <td class="rank">{{ i + 1 }}</td>
               <td class="product-name">{{ p.productName }}</td>
               <td>{{ p.quantitySold }}</td>
-              <td class="revenue">${{ p.revenue.toFixed(2) }}</td>
+              <td class="revenue">Bs {{ p.revenue.toFixed(2) }}</td>
             </tr>
           </tbody>
         </table>

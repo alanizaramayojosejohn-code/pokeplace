@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.OrderRequest;
 import com.example.demo.dto.OrderResponse;
+import com.example.demo.model.Audit;
 import com.example.demo.model.Client;
 import com.example.demo.model.Order;
 import com.example.demo.model.OrderDetail;
@@ -13,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -86,5 +88,20 @@ public class OrderController {
                 .client(client)
                 .details(new java.util.ArrayList<>(details))
                 .build();
+    }
+    // Audit de una orden específica
+// GET /api/orders/1/audit
+    @GetMapping("/{id}/audit")
+    public ResponseEntity<List<Audit>> getOrderAudit(@PathVariable Long id) {
+        return ResponseEntity.ok(orderService.getOrderAudit(id));
+    }
+
+    // Audit por usuario y día
+    // GET /api/orders/audit?username=admin@mail.com&date=2024-01-15T00:00:00
+    @GetMapping("/audit")
+    public ResponseEntity<List<Audit>> getOrderAuditByUserAndDay(
+            @RequestParam String username,
+            @RequestParam LocalDateTime date) {
+        return ResponseEntity.ok(orderService.getOrderAuditByUserAndDay(username, date));
     }
 }

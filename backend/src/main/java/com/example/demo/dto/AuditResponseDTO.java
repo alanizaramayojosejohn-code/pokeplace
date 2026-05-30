@@ -13,4 +13,5 @@ public class AuditResponseDTO {
     private String updatedBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private Double total;
 }

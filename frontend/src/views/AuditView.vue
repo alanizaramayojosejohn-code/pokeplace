@@ -3,12 +3,15 @@ import { ref, onMounted, computed } from 'vue'
 import api from '@/api/axios'
 
 interface AuditEntry {
+  id: number
   entityId: number
-  entityType: 'ORDER' | 'USER'   // lo asignamos nosotros al mergear
-  createdBy: string | null
-  updatedBy: string | null
-  createdAt: string | null
-  updatedAt: string | null
+  entityType: 'ORDER' | 'USER'
+  action: 'CREATE' | 'UPDATE' | 'DELETE'
+  previousValue: string | null
+  newValue: string | null
+  performedBy: string
+  performedAt: string
+  ipAddress: string | null
 }
 
 const logs = ref<AuditEntry[]>([])
@@ -27,27 +30,15 @@ const showDrawer = ref(false)
 const selectedLog = ref<AuditEntry | null>(null)
 
 onMounted(() => fetchLogs())
-
 async function fetchLogs() {
   loading.value = true
   error.value = null
   try {
-    // Siempre cargamos ambos y mergeamos
     const [ordersRes, usersRes] = await Promise.all([
       api.get('/audit/orders'),
       api.get('/audit/users'),
     ])
-
-    const orders: AuditEntry[] = ordersRes.data.map((o: any) => ({
-      ...o,
-      entityType: 'ORDER' as const,
-    }))
-    const users: AuditEntry[] = usersRes.data.map((u: any) => ({
-      ...u,
-      entityType: 'USER' as const,
-    }))
-
-    logs.value = [...orders, ...users]
+    logs.value = [...ordersRes.data, ...usersRes.data]
   } catch {
     error.value = 'Failed to load audit logs.'
   } finally {
@@ -58,33 +49,24 @@ async function fetchLogs() {
 // Todo el filtrado ocurre aquí, sin llamadas extra al backend
 const filtered = computed(() => {
   const start = startDate.value ? new Date(startDate.value) : null
-  // endDate al final del día para incluir registros de ese día
   const end = endDate.value ? new Date(endDate.value + 'T23:59:59') : null
   const userFilter = filterUser.value.trim().toLowerCase()
   const search = searchQuery.value.toLowerCase()
 
   return logs.value.filter(log => {
-    // Filtro por tipo
     if (filterType.value !== 'ALL' && log.entityType !== filterType.value) return false
 
-    // Filtro por usuario (createdBy O updatedBy)
-    if (userFilter) {
-      const matchCreated = log.createdBy?.toLowerCase().includes(userFilter) ?? false
-      const matchUpdated = log.updatedBy?.toLowerCase().includes(userFilter) ?? false
-      if (!matchCreated && !matchUpdated) return false
-    }
+    if (userFilter && !log.performedBy?.toLowerCase().includes(userFilter)) return false
 
-    // Filtro por rango de fechas (usa createdAt como referencia)
     if (start || end) {
-      const ref = log.createdAt ? new Date(log.createdAt) : null
-      if (!ref) return false
-      if (start && ref < start) return false
-      if (end && ref > end) return false
+      const date = log.performedAt ? new Date(log.performedAt) : null
+      if (!date) return false
+      if (start && date < start) return false
+      if (end && date > end) return false
     }
 
-    // Búsqueda libre
     if (search) {
-      const haystack = `${log.createdBy ?? ''} ${log.updatedBy ?? ''} ${log.entityType} ${log.entityId}`.toLowerCase()
+      const haystack = `${log.performedBy} ${log.entityType} ${log.entityId} ${log.action}`.toLowerCase()
       if (!haystack.includes(search)) return false
     }
 
@@ -102,6 +84,14 @@ function closeDrawer() {
 }
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleString()
+}
+
+function formatPrice(value: number) {
+  return new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: 2,
+  }).format(value)
 }
 
 const typeConfig: Record<string, { label: string; class: string }> = {
@@ -162,25 +152,27 @@ const typeConfig: Record<string, { label: string; class: string }> = {
   <tr>
     <th>Entity ID</th>
     <th>Type</th>
-    <th>Created By</th>
-    <th>Updated By</th>
-    <th>Created At</th>
-    <th>Updated At</th>
+    <th>Action</th>
+    <th>Performed By</th>
+    <th>Performed At</th>
     <th>Detail</th>
   </tr>
 </thead>
 <tbody>
-  <tr v-for="log in filtered" :key="`${log.entityType}-${log.entityId}`">
+  <tr v-for="log in filtered" :key="log.id">
     <td class="td-entity">{{ log.entityId }}</td>
     <td>
       <span :class="['type-badge', typeConfig[log.entityType]?.class]">
         {{ typeConfig[log.entityType]?.label ?? log.entityType }}
       </span>
     </td>
-    <td class="td-user">{{ log.createdBy ?? '—' }}</td>
-    <td class="td-user">{{ log.updatedBy ?? '—' }}</td>
-    <td class="td-date">{{ log.createdAt ? formatDate(log.createdAt) : '—' }}</td>
-    <td class="td-date">{{ log.updatedAt ? formatDate(log.updatedAt) : '—' }}</td>
+    <td>
+      <span :class="['action-badge', `action-${log.action.toLowerCase()}`]">
+        {{ log.action }}
+      </span>
+    </td>
+    <td class="td-user">{{ log.performedBy }}</td>
+    <td class="td-date">{{ formatDate(log.performedAt) }}</td>
     <td>
       <button class="btn-detail" @click="openDetail(log)">Ver</button>
     </td>
@@ -201,12 +193,11 @@ const typeConfig: Record<string, { label: string; class: string }> = {
           <h2>Audit Detail #{{ selectedLog.entityId }}</h2>
           <button class="btn-close" @click="closeDrawer">✕</button>
         </div>
-
-        <div class="drawer-body">
+<div class="drawer-body">
   <div class="detail-row">
     <span class="detail-label">Entity Type</span>
     <span :class="['type-badge', typeConfig[selectedLog.entityType]?.class]">
-      {{ typeConfig[selectedLog.entityType]?.label ?? selectedLog.entityType }}
+      {{ typeConfig[selectedLog.entityType]?.label }}
     </span>
   </div>
   <div class="detail-row">
@@ -214,23 +205,28 @@ const typeConfig: Record<string, { label: string; class: string }> = {
     <span class="detail-value">{{ selectedLog.entityId }}</span>
   </div>
   <div class="detail-row">
-    <span class="detail-label">Created By</span>
-    <span class="detail-value">{{ selectedLog.createdBy ?? '—' }}</span>
+    <span class="detail-label">Action</span>
+    <span :class="['action-badge', `action-${selectedLog.action.toLowerCase()}`]">
+      {{ selectedLog.action }}
+    </span>
   </div>
   <div class="detail-row">
-    <span class="detail-label">Updated By</span>
-    <span class="detail-value">{{ selectedLog.updatedBy ?? '—' }}</span>
+    <span class="detail-label">Performed By</span>
+    <span class="detail-value">{{ selectedLog.performedBy }}</span>
   </div>
   <div class="detail-row">
-    <span class="detail-label">Created At</span>
-    <span class="detail-value">{{ selectedLog.createdAt ? formatDate(selectedLog.createdAt) : '—' }}</span>
+    <span class="detail-label">Performed At</span>
+    <span class="detail-value">{{ formatDate(selectedLog.performedAt) }}</span>
   </div>
-  <div class="detail-row">
-    <span class="detail-label">Updated At</span>
-    <span class="detail-value">{{ selectedLog.updatedAt ? formatDate(selectedLog.updatedAt) : '—' }}</span>
+  <div v-if="selectedLog.previousValue" class="json-block">
+    <p class="json-label">Previous Value</p>
+    <pre class="json-pre">{{ JSON.stringify(JSON.parse(selectedLog.previousValue), null, 2) }}</pre>
+  </div>
+  <div v-if="selectedLog.newValue" class="json-block">
+    <p class="json-label">New Value</p>
+    <pre class="json-pre">{{ JSON.stringify(JSON.parse(selectedLog.newValue), null, 2) }}</pre>
   </div>
 </div>
-
         <div class="drawer-footer">
           <button class="btn-cancel" @click="closeDrawer">Cerrar</button>
         </div>

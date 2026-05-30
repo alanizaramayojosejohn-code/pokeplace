@@ -66,6 +66,11 @@ const router = createRouter({
         component: () => import('../views/AuditView.vue'),
         meta: { requiresAdmin: true },
         },
+        {
+          path: 'stock-notes',
+          name: 'stock-notes',
+          component: () => import('../views/StockNoteView.vue'),
+        },
       ],
     },
   ],
