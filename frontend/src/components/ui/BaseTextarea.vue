@@ -9,6 +9,7 @@ defineProps<{
 }>()
 defineEmits<{
   (e: 'update:modelValue', value: string): void
+  (e: 'blur'): void
 }>()
 </script>
 
@@ -22,6 +23,7 @@ defineEmits<{
       :disabled="disabled"
       :class="{ 'has-error': !!error }"
       @input="$emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
+      @blur="$emit('blur')"
     />
     <span v-if="error" class="error-msg">{{ error }}</span>
   </div>

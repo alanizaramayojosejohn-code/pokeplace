@@ -1,0 +1,36 @@
+# Claude / Opencode
+.claude/
+.opencode/
+opencode.json
+opencode.jsonc
+
+# Playwright MCP
+.playwright-mcp/
+
+# Imágenes / capturas
+*.png
+*.jpg
+*.jpeg
+
+# Archivos markdown excepto README
+*.md
+!README.md
+!frontend/README.md
+
+# Archivos compilados
+module-info.class
+*.class
+
+# Entorno / variables sensibles
+.env
+.env.local
+.env.*.local
+backend/.env
+frontend/.env
+
+# Editor
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo

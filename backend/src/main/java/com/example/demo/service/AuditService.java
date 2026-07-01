@@ -5,8 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;        // ← nuevo
-import org.springframework.transaction.annotation.Transactional;      // ← nuevo
 
 import java.time.LocalDateTime;
 
@@ -17,9 +15,13 @@ public class AuditService {
 
     private final AuditRepository auditRepository;
     private final ObjectMapper objectMapper;  // ← inyectado por Spring
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void log(String entityType, Long entityId, Audit.AuditAction action,
                     Object previousValue, Object newValue, String performedBy) {
+        log(entityType, entityId, action, previousValue, newValue, performedBy, null);
+    }
+
+    public void log(String entityType, Long entityId, Audit.AuditAction action,
+                    Object previousValue, Object newValue, String performedBy, String ipAddress) {
         try {
             Audit audit = Audit.builder()
                 .entityType(entityType)
@@ -29,6 +31,7 @@ public class AuditService {
                 .newValue(newValue != null ? objectMapper.writeValueAsString(newValue) : null)
                 .performedBy(performedBy)
                 .performedAt(LocalDateTime.now())
+                .ipAddress(ipAddress)
                 .build();
 
             auditRepository.save(audit);

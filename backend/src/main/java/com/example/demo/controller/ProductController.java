@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.EdibleRequest;
 import com.example.demo.dto.InedibleRequest;
+import com.example.demo.dto.LowStockProductDTO;
 import com.example.demo.dto.ProductResponse;
 import com.example.demo.service.ProductService;
 import jakarta.validation.Valid;
@@ -35,6 +36,11 @@ public class ProductController {
         return ResponseEntity.ok(
                 productService.getByCategory(categoryId).stream().map(ProductResponse::from).toList()
         );
+    }
+
+    @GetMapping("/low-stock")
+    public ResponseEntity<List<LowStockProductDTO>> getLowStock() {
+        return ResponseEntity.ok(productService.getLowStockProducts());
     }
 
     @PostMapping("/edible")

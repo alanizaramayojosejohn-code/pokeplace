@@ -13,6 +13,7 @@ defineProps<{
 }>()
 defineEmits<{
   (e: 'update:modelValue', value: string | number): void
+  (e: 'blur'): void
 }>()
 </script>
 
@@ -31,6 +32,7 @@ defineEmits<{
       :step="step"
       :class="{ 'has-error': !!error }"
       @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+      @blur="$emit('blur')"
     />
     <span v-if="hint && !error" class="hint">{{ hint }}</span>
     <span v-if="error" class="error-msg">{{ error }}</span>

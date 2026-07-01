@@ -5,6 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface ClientRepository extends JpaRepository<Client, Long> {
-    Optional<Client> findByCi(Integer ci);
-    boolean existsByCi(Integer ci);
+    Optional<Client> findByNit(String nit);
+    boolean existsByNit(String nit);
 }

@@ -10,7 +10,12 @@ defineEmits<{
 
 <template>
   <div class="search-bar">
-    <span class="search-icon">⌕</span>
+    <span class="search-icon">
+      <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="8" cy="8" r="5.5" />
+        <path d="M12 12l3.5 3.5" />
+      </svg>
+    </span>
     <input
       :value="modelValue"
       type="text"
@@ -37,8 +42,14 @@ defineEmits<{
 }
 
 .search-icon {
-  font-size: var(--text-lg);
+  display: flex;
+  align-items: center;
   color: var(--color-text-ghost);
+}
+
+.search-icon svg {
+  width: 18px;
+  height: 18px;
 }
 
 .search-bar input {

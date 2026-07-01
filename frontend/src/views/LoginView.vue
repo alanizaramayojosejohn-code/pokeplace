@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import { useTokenClient, decodeCredential } from 'vue3-google-signin'
 import { GoogleSignInButton } from 'vue3-google-signin'
 
 const router = useRouter()
@@ -10,34 +9,91 @@ const authStore = useAuthStore()
 
 const email = ref('')
 const password = ref('')
+const showPassword = ref(false)
 const error = ref('')
 const loading = ref(false)
+
+const MAX_ATTEMPTS = 5
+const LOCKOUT_KEY = 'login_locked_until'
+const attempts = ref(0)
+const countdown = ref(0)
+let countdownTimer: ReturnType<typeof setInterval> | null = null
+
+function getLockoutRemaining(): number {
+  const until = localStorage.getItem(LOCKOUT_KEY)
+  if (!until) return 0
+  const remaining = Math.ceil((Number(until) - Date.now()) / 1000)
+  return remaining > 0 ? remaining : 0
+}
+
+function startCountdown(seconds: number) {
+  countdown.value = seconds
+  if (countdownTimer) clearInterval(countdownTimer)
+  countdownTimer = setInterval(() => {
+    countdown.value--
+    if (countdown.value <= 0) {
+      clearInterval(countdownTimer!)
+      countdownTimer = null
+      localStorage.removeItem(LOCKOUT_KEY)
+      attempts.value = 0
+    }
+  }, 1000)
+}
+
+// Restaurar lockout si recarga la página
+const remaining = getLockoutRemaining()
+if (remaining > 0) startCountdown(remaining)
+
+const isLocked = computed(() => countdown.value > 0)
+const countdownLabel = computed(() => {
+  const m = Math.floor(countdown.value / 60)
+  const s = countdown.value % 60
+  return m > 0 ? `${m}:${String(s).padStart(2, '0')} min` : `${s}s`
+})
+
+onUnmounted(() => { if (countdownTimer) clearInterval(countdownTimer) })
 
 const handleGoogleSuccess = async (response: any) => {
   try {
     await authStore.googleLogin(response.credential)
     router.push('/dashboard')
-  } catch (e) {
-    error.value = 'Google login failed. Contact your administrator.'
+  } catch {
+    error.value = 'Google login fallido. Contacta al administrador.'
   }
 }
 
 const handleGoogleError = () => {
-  error.value = 'Google login failed. Try again.'
+  error.value = 'Google login fallido. Intenta de nuevo.'
 }
 
-const { isReady, login: googleSignIn } = useTokenClient({
-  onSuccess: handleGoogleSuccess,
-  onError: handleGoogleError,
-})
 async function handleLogin() {
+  if (isLocked.value) return
   error.value = ''
   loading.value = true
   try {
     await authStore.login(email.value, password.value)
+    attempts.value = 0
+    localStorage.removeItem(LOCKOUT_KEY)
     router.push('/dashboard')
-  } catch (e) {
-    error.value = 'Invalid email or password'
+  } catch (e: any) {
+    const status = e?.response?.status
+    const message = e?.response?.data?.message ?? ''
+    const secondsUntilUnlock = e?.response?.data?.secondsUntilUnlock
+
+    if (status === 429 || secondsUntilUnlock) {
+      const secs = secondsUntilUnlock ?? getLockoutRemaining()
+      localStorage.setItem(LOCKOUT_KEY, String(Date.now() + secs * 1000))
+      startCountdown(secs)
+      error.value = `Demasiados intentos fallidos. Espera ${countdownLabel.value}.`
+    } else {
+      attempts.value = Math.min(attempts.value + 1, MAX_ATTEMPTS)
+      const remaining = MAX_ATTEMPTS - attempts.value
+      if (remaining > 0) {
+        error.value = `Email o contraseña incorrectos. ${remaining} intento${remaining !== 1 ? 's' : ''} restante${remaining !== 1 ? 's' : ''}.`
+      } else {
+        error.value = message || 'Cuenta bloqueada temporalmente.'
+      }
+    }
   } finally {
     loading.value = false
   }
@@ -73,14 +129,34 @@ async function handleLogin() {
 
             <div class="field">
               <label>Contraseña</label>
-              <input v-model="password" type="password" placeholder="••••••••" required />
+              <div class="password-wrapper">
+                <input
+                  v-model="password"
+                  :type="showPassword ? 'text' : 'password'"
+                  placeholder="••••••••"
+                  required
+                />
+                <button
+                  type="button"
+                  class="toggle-password"
+                  @click="showPassword = !showPassword"
+                  :title="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                >
+                  {{ showPassword ? '🙈' : '👁' }}
+                </button>
+              </div>
             </div>
 
             <p v-if="error" class="error">⚠ {{ error }}</p>
 
-            <button type="submit" :disabled="loading">
-              <span v-if="!loading">Ingresar →</span>
-              <span v-else class="spinner"></span>
+            <div v-if="isLocked" class="lockout-banner">
+              🔒 Cuenta bloqueada — espera <strong>{{ countdownLabel }}</strong> para intentar de nuevo.
+            </div>
+
+            <button type="submit" :disabled="loading || isLocked">
+              <span v-if="loading" class="spinner"></span>
+              <span v-else-if="isLocked">🔒 Bloqueado ({{ countdownLabel }})</span>
+              <span v-else>Ingresar →</span>
             </button>
           </form>
           <div class="divider">
@@ -330,6 +406,46 @@ button:disabled {
   height: 1px;
   background: #e0e0e0;
 }
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.password-wrapper input {
+  padding-right: 2.8rem;
+}
+.toggle-password {
+  position: absolute;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  width: auto;
+  min-height: auto;
+  padding: 0;
+  margin: 0;
+  font-size: 1rem;
+  cursor: pointer;
+  color: #888;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+.toggle-password:hover {
+  color: #111;
+  background: none;
+}
+
+.lockout-banner {
+  background: #fff7ed;
+  border-left: 3px solid #f97316;
+  color: #9a3412;
+  padding: 0.6rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
 .google-btn {
   width: 100%;
   padding: 0.8rem;

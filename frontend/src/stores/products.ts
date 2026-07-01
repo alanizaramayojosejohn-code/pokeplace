@@ -9,6 +9,8 @@ export interface EdiblePayload {
   price: number
   categoryId: number
   pokeName: string
+  description?: string
+  cost?: number
 }
 
 export interface InediblePayload {
@@ -17,6 +19,8 @@ export interface InediblePayload {
   categoryId: number
   stock: number
   minStock: number
+  description?: string
+  cost?: number
 }
 
 export const useProductsStore = defineStore('products', () => {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { useProductsStore } from '../stores/products'
+import { useProductsStore, type EdiblePayload, type InediblePayload } from '../stores/products'
 import { useCategoriesStore } from '../stores/categories'
 import type { Product, ProductType } from '../types/api'
 import PageHeader from '../components/ui/PageHeader.vue'
@@ -31,6 +31,8 @@ const form = ref<{
   pokeName: string
   stock: number
   minStock: number
+  description: string
+  cost: number | null
 }>({
   type: 'EDIBLE',
   name: '',
@@ -39,7 +41,56 @@ const form = ref<{
   pokeName: '',
   stock: 0,
   minStock: 0,
+  description: '',
+  cost: null,
 })
+
+const namePattern = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]*$/
+const pokeNamePattern = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]*$/
+const touched = ref<Set<string>>(new Set())
+
+function markTouched(field: string) {
+  touched.value.add(field)
+}
+
+const fieldErrors = computed(() => ({
+  name:
+    !form.value.name
+      ? 'El nombre es obligatorio'
+      : !namePattern.test(form.value.name)
+        ? 'Solo letras y espacios'
+        : form.value.name.length > 25
+          ? 'Máximo 25 caracteres'
+          : '',
+  price:
+    form.value.price <= 0
+      ? 'Debe ser un valor positivo'
+      : '',
+  pokeName:
+    form.value.type === 'EDIBLE' && !form.value.pokeName
+      ? 'El nombre del Poke es obligatorio'
+      : form.value.type === 'EDIBLE' && !pokeNamePattern.test(form.value.pokeName)
+        ? 'Solo letras y espacios'
+        : form.value.type === 'EDIBLE' && form.value.pokeName.length > 15
+          ? 'Máximo 15 caracteres'
+          : '',
+  stock:
+    form.value.type === 'INEDIBLE' && form.value.stock < 1
+      ? 'Debe ser un valor positivo'
+      : '',
+  minStock:
+    form.value.type === 'INEDIBLE' && form.value.minStock < 0
+      ? 'No puede ser negativo'
+      : '',
+  description:
+    form.value.description.length > 50
+      ? 'Máximo 50 caracteres'
+      : '',
+  cost:
+    form.value.cost !== null && form.value.cost !== 0 && form.value.cost < 0.01
+      ? 'Debe ser un valor positivo'
+      : '',
+}))
 
 onMounted(async () => {
   await Promise.all([products.fetchAll(), categories.fetchAll()])
@@ -49,9 +100,35 @@ const categoryOptions = computed(() =>
   categories.items.map((c) => ({ value: c.id, label: c.name })),
 )
 
+const showQuickCategory = ref(false)
+const quickCategoryForm = ref({ name: '' })
+const quickCategoryLoading = ref(false)
+
+function toggleQuickCategory() {
+  showQuickCategory.value = !showQuickCategory.value
+  if (showQuickCategory.value) quickCategoryForm.value = { name: '' }
+}
+
+async function submitQuickCategory() {
+  const name = quickCategoryForm.value.name.trim()
+  if (!name) return
+  quickCategoryLoading.value = true
+  try {
+    const ok = await categories.create({ name })
+    if (ok) {
+      await categories.fetchAll()
+      const created = categories.items.find((c) => c.name === name)
+      if (created) form.value.categoryId = created.id
+      showQuickCategory.value = false
+    }
+  } finally {
+    quickCategoryLoading.value = false
+  }
+}
+
 const typeOptions = [
-  { value: 'EDIBLE' as ProductType, label: 'Comestible (Poke Bowl)' },
-  { value: 'INEDIBLE' as ProductType, label: 'No comestible (con stock)' },
+  { value: 'EDIBLE' as ProductType, label: 'Comestible' },
+  { value: 'INEDIBLE' as ProductType, label: 'No comestible' },
 ]
 
 const filtered = computed(() =>
@@ -75,7 +152,10 @@ function resetForm() {
     pokeName: '',
     stock: 0,
     minStock: 0,
+    description: '',
+    cost: null,
   }
+  touched.value = new Set()
 }
 
 function openCreate() {
@@ -95,10 +175,17 @@ function openEdit(p: Product) {
     pokeName: p.pokeName ?? '',
     stock: p.stock ?? 0,
     minStock: p.minStock ?? 0,
+    description: p.description ?? '',
+    cost: p.cost ?? null,
   }
+  touched.value = new Set()
   products.error = null
   showDrawer.value = true
 }
+
+const isFormValid = computed(() => {
+  return Object.values(fieldErrors.value).every((e) => !e)
+})
 
 async function handleSubmit() {
   if (!form.value.categoryId) {
@@ -109,19 +196,32 @@ async function handleSubmit() {
     name: form.value.name,
     price: Number(form.value.price),
     categoryId: Number(form.value.categoryId),
+    description: form.value.description || undefined,
+    cost: form.value.cost && form.value.cost > 0 ? Number(form.value.cost) : undefined,
   }
 
   let ok = false
   if (form.value.type === 'EDIBLE') {
-    const payload = { ...base, pokeName: form.value.pokeName }
+    const payload: EdiblePayload = {
+      name: base.name,
+      price: base.price,
+      categoryId: base.categoryId,
+      pokeName: form.value.pokeName,
+      ...(base.description ? { description: base.description } : {}),
+      ...(base.cost !== undefined ? { cost: base.cost } : {}),
+    }
     ok = editingId.value
       ? await products.updateEdible(editingId.value, payload)
       : await products.createEdible(payload)
   } else {
-    const payload = {
-      ...base,
+    const payload: InediblePayload = {
+      name: base.name,
+      price: base.price,
+      categoryId: base.categoryId,
       stock: Number(form.value.stock),
       minStock: Number(form.value.minStock),
+      ...(base.description ? { description: base.description } : {}),
+      ...(base.cost !== undefined ? { cost: base.cost } : {}),
     }
     ok = editingId.value
       ? await products.updateInedible(editingId.value, payload)
@@ -171,13 +271,13 @@ function stockStatus(p: Product) {
           :class="['tab', activeTab === 'EDIBLE' && 'tab-active']"
           @click="activeTab = 'EDIBLE'"
         >
-          🍣 Poke Bowls
+          Poke Bowls
         </button>
         <button
           :class="['tab', activeTab === 'INEDIBLE' && 'tab-active']"
           @click="activeTab = 'INEDIBLE'"
         >
-          🎁 Con stock
+          Con stock
         </button>
       </div>
       <SearchBar v-model="searchQuery" placeholder="Buscar producto..." />
@@ -223,31 +323,77 @@ function stockStatus(p: Product) {
         :disabled="!!editingId"
         required
       />
-      <BaseInput v-model="form.name" label="Nombre" placeholder="Ej: Poke Salmón" required />
       <BaseInput
-        v-model="form.price"
-        label="Precio (Bs)"
-        type="number"
-        step="0.5"
-        :min="0"
-        placeholder="45.00"
+        v-model="form.name"
+        label="Nombre"
+        placeholder="Ej: Poke Salmón"
+        maxlength="25"
+        :error="touched.has('name') ? fieldErrors.name : ''"
         required
+        @input="markTouched('name')"
       />
-      <BaseSelect
-        v-model="form.categoryId"
-        label="Categoría"
-        :options="categoryOptions"
-        placeholder="Selecciona una categoría"
-        required
+      <div class="form-row">
+        <BaseInput
+          v-model="form.price"
+          label="Precio (Bs)"
+          type="number"
+          step="0.5"
+          :min="0.01"
+          placeholder="45.00"
+          :error="touched.has('price') ? fieldErrors.price : ''"
+          required
+          @input="markTouched('price')"
+        />
+        <BaseInput
+          v-model="form.cost"
+          label="Costo (Bs)"
+          type="number"
+          step="0.5"
+          :min="0.01"
+          placeholder="20.00"
+          :error="touched.has('cost') ? fieldErrors.cost : ''"
+          hint="Costo de producci&oacute;n o adquisici&oacute;n"
+          @input="markTouched('cost')"
+        />
+      </div>
+      <BaseInput
+        v-model="form.description"
+        label="Descripci&oacute;n"
+        placeholder="Breve descripci&oacute;n del producto"
+        maxlength="50"
+        :error="touched.has('description') ? fieldErrors.description : ''"
+        @input="markTouched('description')"
       />
+        <div class="category-field-row">
+          <BaseSelect
+            v-model="form.categoryId"
+            label="Categor&iacute;a"
+            :options="categoryOptions"
+            placeholder="Selecciona una categor&iacute;a"
+            required
+            class="category-select"
+          />
+          <button class="btn-add-category" type="button" title="Nueva categor&iacute;a" @click="toggleQuickCategory">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+          </button>
+        </div>
+        <div v-if="showQuickCategory" class="quick-category-form">
+          <BaseInput v-model="quickCategoryForm.name" placeholder="Nombre de la categor&iacute;a" required />
+          <BaseButton size="sm" variant="primary" block :loading="quickCategoryLoading" @click="submitQuickCategory">
+            {{ quickCategoryLoading ? 'Guardando...' : 'Guardar Categor&iacute;a' }}
+          </BaseButton>
+        </div>
 
       <template v-if="form.type === 'EDIBLE'">
         <BaseInput
           v-model="form.pokeName"
           label="Nombre del Poke"
           placeholder="Ej: Tsunami Roll"
+          maxlength="15"
+          :error="touched.has('pokeName') ? fieldErrors.pokeName : ''"
           hint="Nombre creativo del poke bowl"
           required
+          @input="markTouched('pokeName')"
         />
       </template>
 
@@ -257,18 +403,22 @@ function stockStatus(p: Product) {
             v-model="form.stock"
             label="Stock inicial"
             type="number"
-            :min="0"
+            :min="1"
             placeholder="10"
+            :error="touched.has('stock') ? fieldErrors.stock : ''"
             required
+            @input="markTouched('stock')"
           />
           <BaseInput
             v-model="form.minStock"
-            label="Stock mínimo"
+            label="Stock m&iacute;nimo"
             type="number"
             :min="0"
             placeholder="2"
+            :error="touched.has('minStock') ? fieldErrors.minStock : ''"
             hint="Alerta bajo este nivel"
             required
+            @input="markTouched('minStock')"
           />
         </div>
       </template>
@@ -409,5 +559,53 @@ function stockStatus(p: Product) {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
+}
+
+.category-field-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+.category-field-row .category-select {
+  flex: 1;
+}
+
+.btn-add-category {
+  width: 42px;
+  height: 42px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+.btn-add-category:hover {
+  border-color: var(--color-dark);
+  color: var(--color-dark);
+}
+.btn-add-category svg {
+  width: 18px;
+  height: 18px;
+}
+
+.quick-category-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-border);
+  animation: fadeInUp 0.2s ease-out;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>

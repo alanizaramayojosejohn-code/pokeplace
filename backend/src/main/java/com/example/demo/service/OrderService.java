@@ -6,6 +6,8 @@ import com.example.demo.model.*;
 import com.example.demo.repository.*;
 import com.example.demo.config.SecurityUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
@@ -22,9 +24,23 @@ public class OrderService {
     private final AuditService auditService;       // ← nuevo
     private final SecurityUtils securityUtils;     // ← nuevo
 
+    @Transactional(readOnly = true)
     public List<Order> getAll() {
-        return orderRepository.findAll();
+        return orderRepository.findAllWithDetails();
     }
+
+    public Page<Order> getAll(Pageable pageable) {
+        return orderRepository.findAll(pageable);
+    }
+
+    public Page<Order> getByStatus(Order.OrderStatus status, Pageable pageable) {
+        return orderRepository.findByStatus(status, pageable);
+    }
+
+    public long countByStatus(Order.OrderStatus status) {
+        return orderRepository.countByStatus(status);
+    }
+
     @Transactional(readOnly = true) 
     public Order getById(Long id) {
         return orderRepository.findById(id)
@@ -73,6 +89,14 @@ public class OrderService {
         }
 
         order.setTotal(total);
+
+        if (order.getAmountPaid() < total) {
+            throw new BadRequestException(
+                "Amount paid (Bs " + String.format("%.2f", order.getAmountPaid())
+                + ") must be at least total (Bs " + String.format("%.2f", total) + ")");
+        }
+        order.setChange(order.getAmountPaid() - total);
+
         Order saved = orderRepository.save(order);
 
         // ← auditoría

@@ -23,6 +23,11 @@ public class Product extends BaseEntity {
     @Column(nullable = false)
     private Double price;
 
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    private Double cost;
+
     // Relación con Category (N:1)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_category", nullable = false)

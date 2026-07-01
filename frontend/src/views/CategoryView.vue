@@ -19,6 +19,19 @@ const form = ref({ name: '' })
 
 onMounted(() => store.fetchAll())
 
+const touched = ref<Set<string>>(new Set())
+
+function markTouched(field: string) {
+  touched.value.add(field)
+}
+
+const namePattern = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$/
+
+const fieldErrors = computed(() => ({
+  name: !form.value.name ? 'El nombre es obligatorio'
+    : !namePattern.test(form.value.name) ? 'Solo letras y espacios' : '',
+}))
+
 const filtered = computed(() =>
   store.items.filter((c) => c.name.toLowerCase().includes(searchQuery.value.toLowerCase())),
 )
@@ -26,6 +39,7 @@ const filtered = computed(() =>
 function openCreate() {
   editingId.value = null
   form.value = { name: '' }
+  touched.value = new Set()
   store.error = null
   showDrawer.value = true
 }
@@ -33,11 +47,18 @@ function openCreate() {
 function openEdit(cat: { id: number; name: string }) {
   editingId.value = cat.id
   form.value = { name: cat.name }
+  touched.value = new Set()
   store.error = null
   showDrawer.value = true
 }
 
+function touchAll() {
+  touched.value.add('name')
+}
+
 async function handleSubmit() {
+  touchAll()
+  if (!Object.values(fieldErrors.value).every((e) => !e)) return
   const ok = editingId.value
     ? await store.update(editingId.value, form.value)
     : await store.create(form.value)
@@ -94,7 +115,8 @@ async function handleDelete(id: number) {
         v-model="form.name"
         label="Nombre"
         placeholder="Ej: Poke Bowls Especiales"
-        required
+        :error="touched.has('name') ? fieldErrors.name : ''"
+        @blur="markTouched('name')"
       />
       <AlertBanner v-if="store.error" :message="store.error" />
 

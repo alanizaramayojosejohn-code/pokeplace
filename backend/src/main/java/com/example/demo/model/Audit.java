@@ -39,6 +39,6 @@ public class Audit {
     private String ipAddress;
 
     public enum AuditAction {
-        CREATE, UPDATE, DELETE
+        CREATE, UPDATE, DELETE, LOGIN, LOGOUT
     }
 }
