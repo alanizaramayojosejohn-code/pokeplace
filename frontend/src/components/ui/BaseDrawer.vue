@@ -18,7 +18,9 @@ defineEmits<{
     <aside v-if="modelValue" class="drawer" :class="{ 'drawer-wide': wide }">
       <header class="drawer-header">
         <h2>{{ title }}</h2>
-        <button class="btn-close" @click="$emit('update:modelValue', false)">✕</button>
+        <button class="btn-close" @click="$emit('update:modelValue', false)">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+        </button>
       </header>
 
       <div class="drawer-body">
@@ -128,6 +130,20 @@ defineEmits<{
 @media (max-width: 600px) {
   .drawer {
     width: 100%;
+  }
+
+  .drawer-header {
+    padding: 1rem 1.25rem;
+  }
+
+  .drawer-body {
+    padding: 1rem 1.25rem;
+    gap: 0.875rem;
+  }
+
+  .drawer-footer {
+    padding: 1rem 1.25rem;
+    gap: 0.5rem;
   }
 }
 </style>

@@ -16,10 +16,17 @@ public class Client extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Cédula de identidad
     @Column(nullable = false, unique = true)
-    private Integer ci;
+    private String nit;
 
     @Column(nullable = false)
     private String name;
+
+    @Column(nullable = false, unique = true)
+    private String ci;
+
+    @Column(nullable = false)
+    private String phone;
+
+    private String email;
 }

@@ -3,18 +3,28 @@ import { ref } from 'vue'
 import api from '../api/axios'
 import { extractErrorMessage } from '../api/errors'
 import type { Client } from '../types/api'
+import type { PagedResult } from './orders'
 
 export const useClientsStore = defineStore('clients', () => {
   const items = ref<Client[]>([])
+  const allItems = ref<Client[]>([])
+  const page = ref(0)
+  const totalPages = ref(0)
+  const totalElements = ref(0)
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  async function fetchAll() {
+  async function fetchPage(p = 0, size = 20) {
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.get<Client[]>('/clients')
-      items.value = data
+      const { data } = await api.get<PagedResult<Client>>('/clients', {
+        params: { page: p, size },
+      })
+      items.value = data.content
+      page.value = data.page
+      totalPages.value = data.totalPages
+      totalElements.value = data.totalElements
     } catch (e) {
       error.value = extractErrorMessage(e, 'No se pudieron cargar los clientes')
     } finally {
@@ -22,22 +32,36 @@ export const useClientsStore = defineStore('clients', () => {
     }
   }
 
-  async function create(payload: { ci: number; name: string }) {
+  async function fetchAll() {
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.post<Client>('/clients', payload)
-      items.value.push(data)
-      return true
+      const { data } = await api.get<Client[]>('/clients/all')
+      allItems.value = data
     } catch (e) {
-      error.value = extractErrorMessage(e, 'No se pudo crear el cliente')
-      return false
+      error.value = extractErrorMessage(e, 'No se pudieron cargar los clientes')
     } finally {
       loading.value = false
     }
   }
 
-  async function update(id: number, payload: { ci: number; name: string }) {
+  async function create(payload: { nit: string; name: string; ci: string; phone: string; email?: string }) {
+    loading.value = true
+    error.value = null
+    try {
+      const { data } = await api.post<Client>('/clients', payload)
+      items.value.push(data)
+      allItems.value.push(data)
+      return data
+    } catch (e) {
+      error.value = extractErrorMessage(e, 'No se pudo crear el cliente')
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function update(id: number, payload: { nit: string; name: string; ci: string; phone: string; email?: string }) {
     loading.value = true
     error.value = null
     try {
@@ -68,5 +92,8 @@ export const useClientsStore = defineStore('clients', () => {
     }
   }
 
-  return { items, loading, error, fetchAll, create, update, remove }
+  return {
+    items, allItems, page, totalPages, totalElements, loading, error,
+    fetchPage, fetchAll, create, update, remove,
+  }
 })

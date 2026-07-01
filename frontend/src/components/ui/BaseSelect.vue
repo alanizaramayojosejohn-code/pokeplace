@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T extends string | number">
-defineProps<{
+const props = defineProps<{
   modelValue: T | null | undefined
   label?: string
   options: { value: T; label: string }[]
@@ -8,9 +8,17 @@ defineProps<{
   required?: boolean
   error?: string
 }>()
-defineEmits<{
+const emit = defineEmits<{
   (e: 'update:modelValue', value: T): void
+  (e: 'blur'): void
 }>()
+
+function onChange(event: Event) {
+  const target = event.target as HTMLSelectElement
+  const raw = target.value
+  const match = props.options.find((o) => String(o.value) === raw)
+  emit('update:modelValue', match ? match.value : (raw as unknown as T))
+}
 </script>
 
 <template>
@@ -23,7 +31,8 @@ defineEmits<{
       :value="modelValue ?? ''"
       :disabled="disabled"
       :class="{ 'has-error': !!error }"
-      @change="$emit('update:modelValue', ($event.target as HTMLSelectElement).value as T)"
+      @change="onChange"
+      @blur="$emit('blur')"
     >
       <option v-if="placeholder" value="" disabled>{{ placeholder }}</option>
       <option v-for="opt in options" :key="opt.value" :value="opt.value">

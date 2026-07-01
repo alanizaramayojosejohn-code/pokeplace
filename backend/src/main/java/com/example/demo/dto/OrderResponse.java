@@ -17,6 +17,8 @@ public class OrderResponse {
     private String paymentMethod;
     private String status;
     private Double total;
+    private Double amountPaid;
+    private Double change;
     private String notes;
 
     private Long clientId;
@@ -35,6 +37,8 @@ public class OrderResponse {
                 .paymentMethod(order.getPaymentMethod())
                 .status(order.getStatus() != null ? order.getStatus().name() : null)
                 .total(order.getTotal())
+                .amountPaid(order.getAmountPaid())
+                .change(order.getChange())
                 .notes(order.getNotes())
                 .clientId(order.getClient() != null ? order.getClient().getId() : null)
                 .clientName(order.getClient() != null ? order.getClient().getName() : null)

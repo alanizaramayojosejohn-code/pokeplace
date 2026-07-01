@@ -17,6 +17,8 @@ public class ProductResponse {
     private String type;
     private Long categoryId;
     private String categoryName;
+    private String description;
+    private Double cost;
 
     // Solo para Edible
     private String pokeName;
@@ -30,6 +32,8 @@ public class ProductResponse {
                 .id(product.getId())
                 .name(product.getName())
                 .price(product.getPrice())
+                .description(product.getDescription())
+                .cost(product.getCost())
                 .categoryId(product.getCategory() != null ? product.getCategory().getId() : null)
                 .categoryName(product.getCategory() != null ? product.getCategory().getName() : null);
 

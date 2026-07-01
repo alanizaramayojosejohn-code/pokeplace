@@ -1,46 +1,43 @@
 package com.example.demo.service;
-
-import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.model.Audit;
-import com.example.demo.model.User;
 import com.example.demo.repository.AuditRepository;
-import com.example.demo.repository.UserRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuditService {
 
     private final AuditRepository auditRepository;
-    private final UserRepository userRepository;
-
-    public List<Audit> getAll() {
-        return auditRepository.findAll();
+    private final ObjectMapper objectMapper;  // ← inyectado por Spring
+    public void log(String entityType, Long entityId, Audit.AuditAction action,
+                    Object previousValue, Object newValue, String performedBy) {
+        log(entityType, entityId, action, previousValue, newValue, performedBy, null);
     }
 
-    public List<Audit> getByTable(String tableName) {
-        return auditRepository.findByTableName(tableName);
-    }
-
-    public List<Audit> getByUser(Long userId) {
-        return auditRepository.findByUserId(userId);
-    }
-
-    public void log(String action, String tableName, Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
-
-        Audit audit = Audit.builder()
+    public void log(String entityType, Long entityId, Audit.AuditAction action,
+                    Object previousValue, Object newValue, String performedBy, String ipAddress) {
+        try {
+            Audit audit = Audit.builder()
+                .entityType(entityType)
+                .entityId(entityId)
                 .action(action)
-                .tableName(tableName)
-                .dateTime(LocalDateTime.now())
-                .user(user)
+                .previousValue(previousValue != null ? objectMapper.writeValueAsString(previousValue) : null)
+                .newValue(newValue != null ? objectMapper.writeValueAsString(newValue) : null)
+                .performedBy(performedBy)
+                .performedAt(LocalDateTime.now())
+                .ipAddress(ipAddress)
                 .build();
 
-        auditRepository.save(audit);
+            auditRepository.save(audit);
+            log.info("Audit saved: {} {} {}", action, entityType, entityId);
+        } catch (Exception e) {
+            log.error("Failed to save audit log for {} {}: {}", entityType, entityId, e.getMessage(), e);
+        }
     }
 }

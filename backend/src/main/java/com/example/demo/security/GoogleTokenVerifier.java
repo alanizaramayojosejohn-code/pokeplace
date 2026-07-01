@@ -1,5 +1,6 @@
 package com.example.demo.security;
 
+import com.example.demo.exception.InvalidCredentialsException;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
@@ -12,10 +13,12 @@ import java.util.Collections;
 @Component
 public class GoogleTokenVerifier {
 
-    @Value("${google.client-id}")
-    private String clientId;
+    private final String clientId;
 
-    // Verifica el token con Google y retorna la info del usuario
+    public GoogleTokenVerifier(@Value("${google.client-id}") String clientId) {
+        this.clientId = clientId;
+    }
+
     public GoogleIdToken.Payload verify(String token) {
         try {
             GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
@@ -28,13 +31,15 @@ public class GoogleTokenVerifier {
             GoogleIdToken idToken = verifier.verify(token);
 
             if (idToken == null) {
-                throw new RuntimeException("Invalid Google token");
+                throw new InvalidCredentialsException("Invalid Google token");
             }
 
             return idToken.getPayload();
 
+        } catch (InvalidCredentialsException e) {
+            throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Google token verification failed: " + e.getMessage());
+            throw new InvalidCredentialsException("Google token verification failed: " + e.getMessage());
         }
     }
 }

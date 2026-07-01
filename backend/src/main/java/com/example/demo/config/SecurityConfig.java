@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -32,8 +33,26 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
+                .requestMatchers("/api/categories/**").authenticated()
+                .requestMatchers("/api/products/**").authenticated()
+                .requestMatchers("/api/clients/**").authenticated()
+                .requestMatchers("/api/orders/**").authenticated()
                 .requestMatchers("/api/users/**").hasRole("ADMIN")
+                .requestMatchers("/api/reports/**").hasRole("ADMIN")
+                .requestMatchers("/api/audit/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
+            )
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint((request, response, authException) -> {
+                    response.setContentType("application/json");
+                    response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                    response.getWriter().write("{\"error\":\"Unauthorized\"}");
+                })
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    response.setContentType("application/json");
+                    response.setStatus(HttpStatus.FORBIDDEN.value());
+                    response.getWriter().write("{\"error\":\"Forbidden\"}");
+                })
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 

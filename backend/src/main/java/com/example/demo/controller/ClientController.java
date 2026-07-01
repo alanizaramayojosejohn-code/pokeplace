@@ -2,10 +2,13 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.ClientRequest;
 import com.example.demo.dto.ClientResponse;
+import com.example.demo.dto.PagedResponse;
 import com.example.demo.model.Client;
 import com.example.demo.service.ClientService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,7 +22,16 @@ public class ClientController {
     private final ClientService clientService;
 
     @GetMapping
-    public ResponseEntity<List<ClientResponse>> getAll() {
+    public ResponseEntity<PagedResponse<ClientResponse>> getAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+        var result = clientService.getAll(pageable);
+        return ResponseEntity.ok(PagedResponse.from(result.map(ClientResponse::from)));
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<ClientResponse>> getAllFull() {
         return ResponseEntity.ok(
                 clientService.getAll().stream().map(ClientResponse::from).toList()
         );
@@ -30,9 +42,9 @@ public class ClientController {
         return ResponseEntity.ok(ClientResponse.from(clientService.getById(id)));
     }
 
-    @GetMapping("/ci/{ci}")
-    public ResponseEntity<ClientResponse> getByCi(@PathVariable Integer ci) {
-        return ResponseEntity.ok(ClientResponse.from(clientService.getByCi(ci)));
+    @GetMapping("/nit/{nit}")
+    public ResponseEntity<ClientResponse> getByNit(@PathVariable String nit) {
+        return ResponseEntity.ok(ClientResponse.from(clientService.getByNit(nit)));
     }
 
     @PostMapping
@@ -43,7 +55,7 @@ public class ClientController {
 
     @PutMapping("/{id}")
     public ResponseEntity<ClientResponse> update(@PathVariable Long id,
-                                                 @Valid @RequestBody ClientRequest request) {
+                                                  @Valid @RequestBody ClientRequest request) {
         Client updated = clientService.update(id, request.toEntity());
         return ResponseEntity.ok(ClientResponse.from(updated));
     }

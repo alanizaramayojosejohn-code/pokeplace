@@ -4,7 +4,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Min;
 import lombok.Data;
 
 import java.util.List;
@@ -13,7 +13,7 @@ import java.util.List;
 public class OrderRequest {
 
     @NotNull(message = "Table number is required")
-    @Positive(message = "Table number must be positive")
+    @Min(value = 0, message = "Table number must be positive")
     private Integer tableNumber;
 
     @NotBlank(message = "Payment method is required")
@@ -26,6 +26,9 @@ public class OrderRequest {
 
     @NotNull(message = "User id is required")
     private Long userId;
+
+    @NotNull(message = "Amount paid is required")
+    private Double amountPaid;
 
     @NotEmpty(message = "Order must have at least one detail")
     @Valid

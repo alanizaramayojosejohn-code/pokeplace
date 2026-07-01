@@ -8,10 +8,20 @@ import lombok.Data;
 @AllArgsConstructor
 public class ClientResponse {
     private Long id;
-    private Integer ci;
+    private String nit;
     private String name;
+    private String ci;
+    private String phone;
+    private String email;
 
     public static ClientResponse from(Client client) {
-        return new ClientResponse(client.getId(), client.getCi(), client.getName());
+        return new ClientResponse(
+                client.getId(),
+                client.getNit(),
+                client.getName(),
+                client.getCi(),
+                client.getPhone(),
+                client.getEmail()
+        );
     }
 }

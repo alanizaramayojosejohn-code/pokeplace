@@ -12,6 +12,8 @@ export interface Product {
   type: ProductType
   categoryId: number
   categoryName: string
+  description?: string
+  cost?: number
   pokeName?: string
   stock?: number
   minStock?: number
@@ -19,8 +21,11 @@ export interface Product {
 
 export interface Client {
   id: number
-  ci: number
+  nit: string
   name: string
+  ci: string
+  phone: string
+  email?: string
 }
 
 export type OrderStatus = 'PENDING' | 'READY_FOR_PICKUP' | 'DELIVERED' | 'CANCELLED'
@@ -40,6 +45,8 @@ export interface Order {
   paymentMethod: string
   status: OrderStatus
   total: number
+  amountPaid?: number
+  change?: number
   notes?: string
   clientId?: number
   clientName?: string
@@ -51,6 +58,7 @@ export interface Order {
 export interface CreateOrderPayload {
   tableNumber: number
   paymentMethod: string
+  amountPaid: number
   notes?: string
   clientId?: number | null
   userId: number
@@ -62,4 +70,11 @@ export interface ApiError {
   status?: number
   message?: string
   errors?: Record<string, string>
+}
+
+export interface LowStockProduct {
+  id: number
+  name: string
+  stock: number
+  minStock: number
 }

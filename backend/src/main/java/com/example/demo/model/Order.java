@@ -36,6 +36,12 @@ public class Order extends BaseEntity {
 
     private String notes;
 
+    @Column(name = "amount_paid")
+    private Double amountPaid;
+
+    @Column(name = "change_amount")
+    private Double change;
+
     // Relación con Client (N:1)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_client")
